@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../lib/api'
-import type { Priority, Ticket, TicketStatus } from '../types/api'
+import type { Paginated, Priority, Ticket, TicketStatus } from '../types/api'
 import { queryKeys } from './keys'
 
 export interface TicketFilters {
@@ -32,7 +32,7 @@ function toQuery(filters: TicketFilters = {}) {
 export function useTickets(filters?: TicketFilters) {
   return useQuery({
     queryKey: queryKeys.tickets(filters),
-    queryFn: () => apiFetch<Ticket[]>(`/tickets${toQuery(filters)}`),
+    queryFn: () => apiFetch<Paginated<Ticket>>(`/tickets${toQuery(filters)}`).then((r) => r.data),
   })
 }
 

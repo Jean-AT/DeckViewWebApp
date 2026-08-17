@@ -8,7 +8,7 @@ import { Stat } from '../../components/ui/stat'
 import { formatCount } from '../../lib/format'
 import { useProjects } from '../../queries/projects'
 import { useTickets } from '../../queries/tickets'
-import type { Deployment } from '../../types/api'
+import type { Deployment, Paginated } from '../../types/api'
 import { DeploymentsTable } from '../projects/deployments-table'
 import { useQueries } from '@tanstack/react-query'
 import { apiFetch } from '../../lib/api'
@@ -20,7 +20,7 @@ export function DashboardPage() {
   const deploymentQueries = useQueries({
     queries: (projects.data ?? []).map((project) => ({
       queryKey: queryKeys.projectDeployments(project.id),
-      queryFn: () => apiFetch<Deployment[]>(`/projects/${project.id}/deployments`),
+      queryFn: () => apiFetch<Paginated<Deployment>>(`/projects/${project.id}/deployments`).then((r) => r.data),
       enabled: Boolean(projects.data),
     })),
   })

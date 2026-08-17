@@ -6,6 +6,7 @@ import { AuthProvider } from './lib/auth'
 import { ToastProvider } from './components/ui/toast'
 import { App } from './App'
 import './index.css'
+import {ErrorBoundary} from "@/components/error-boundary.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')!).render(
       <ToastProvider>
         <AuthProvider>
           <BrowserRouter>
-            <App />
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
           </BrowserRouter>
         </AuthProvider>
       </ToastProvider>

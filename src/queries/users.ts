@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../lib/api'
-import type { Role, User } from '../types/api'
+import type { Paginated, Role, User } from '../types/api'
 import { queryKeys } from './keys'
 
 export interface UserInput {
@@ -11,7 +11,7 @@ export interface UserInput {
 }
 
 export function useUsers() {
-  return useQuery({ queryKey: queryKeys.users, queryFn: () => apiFetch<User[]>('/users') })
+  return useQuery({ queryKey: queryKeys.users, queryFn: () => apiFetch<Paginated<User>>('/users').then((r) => r.data) })
 }
 
 export function useCreateUser() {

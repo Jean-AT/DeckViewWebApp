@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../lib/api'
-import type { Credential, Deployment, Project, Provider, SyncResult } from '../types/api'
+import type { Credential, Deployment, Paginated, Project, Provider, SyncResult } from '../types/api'
 import { queryKeys } from './keys'
 
 export interface ProjectInput {
@@ -11,7 +11,7 @@ export interface ProjectInput {
 }
 
 export function useProjects() {
-  return useQuery({ queryKey: queryKeys.projects, queryFn: () => apiFetch<Project[]>('/projects') })
+  return useQuery({ queryKey: queryKeys.projects, queryFn: () => apiFetch<Paginated<Project>>('/projects').then((r) => r.data) })
 }
 
 export function useProject(id: string | undefined) {
@@ -26,7 +26,7 @@ export function useProjectDeployments(id: string | undefined) {
   return useQuery({
     queryKey: queryKeys.projectDeployments(id ?? ''),
     enabled: Boolean(id),
-    queryFn: () => apiFetch<Deployment[]>(`/projects/${id}/deployments`),
+    queryFn: () => apiFetch<Paginated<Deployment>>(`/projects/${id}/deployments`).then((r) => r.data),
   })
 }
 

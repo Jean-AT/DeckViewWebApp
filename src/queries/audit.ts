@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../lib/api'
-import type { AuditLog } from '../types/api'
+import type { AuditLog, Paginated } from '../types/api'
 import { queryKeys } from './keys'
 
 export interface AuditFilters {
@@ -21,6 +21,6 @@ function toQuery(filters: AuditFilters = {}) {
 export function useAuditLogs(filters?: AuditFilters) {
   return useQuery({
     queryKey: queryKeys.auditLogs(filters),
-    queryFn: () => apiFetch<AuditLog[]>(`/audit-logs${toQuery(filters)}`),
+    queryFn: () => apiFetch<Paginated<AuditLog>>(`/audit-logs${toQuery(filters)}`).then((r) => r.data),
   })
 }
