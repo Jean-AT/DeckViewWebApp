@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+
+@custom-variant light (&:where(.light, .light *));
+
+:root {
+  --background: 0 0% 5%;
+  --foreground: 0 0% 96%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 96%;
+  --primary: 0 0% 96%;
+  --primary-foreground: 0 0% 5%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 40 30% 92%;
+  --accent-foreground: 0 0% 5%;
+  --accent-surface: 40 30% 92%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 96%;
+  --border: 0 0% 16%;
+  --input: 0 0% 14%;
+  --ring: 0 0% 80%;
+  --line: 0 0% 16%;
+  --radius: 0.5rem;
+  color-scheme: dark;
+}
+
+html.light {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 8%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 8%;
+  --primary: 0 0% 8%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 8%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 0 0% 8%;
+  --accent-foreground: 0 0% 98%;
+  --accent-surface: 40 26% 29%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 8%;
+  --line: 0 0% 90%;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-surface: hsl(var(--accent-surface));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-line: hsl(var(--line));
+  --color-success: #00c758;
+  --color-danger: #fb2c36;
+  --color-warning: #f5a524;
+
+  --font-display: 'Space Grotesk', 'Space Grotesk Fallback', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    @apply bg-background font-display text-foreground antialiased;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: hsl(var(--accent-surface) / 0.25);
+  }
+}
