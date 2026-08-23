@@ -1,46 +1,52 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
-import { X } from 'lucide-react'
-import { Button } from './button'
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
+import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
 import { cn } from '../../lib/cn'
 
 type ToastKind = 'success' | 'error' | 'info'
+
 interface ToastItem {
   id: number
-  title: string
   kind: ToastKind
+  message: string
 }
 
-const ToastContext = createContext<{ toast: (title: string, kind?: ToastKind) => void } | null>(null)
+interface ToastContextValue {
+  push: (kind: ToastKind, message: string) => void
+}
+
+const ToastContext = createContext<ToastContextValue | null>(null)
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<ToastItem[]>([])
-  const remove = useCallback((id: number) => setItems((current) => current.filter((item) => item.id !== id)), [])
-  const toast = useCallback(
-    (title: string, kind: ToastKind = 'info') => {
-      const id = Date.now() + Math.random()
-      setItems((current) => [...current, { id, title, kind }])
-      window.setTimeout(() => remove(id), 3500)
-    },
-    [remove],
-  )
-  const value = useMemo(() => ({ toast }), [toast])
+  const [toasts, setToasts] = useState<ToastItem[]>([])
+  const counter = useRef(0)
+
+  const push = useCallback((kind: ToastKind, message: string) => {
+    const id = ++counter.current
+    setToasts((prev) => [...prev, { id, kind, message }])
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id))
+    }, 4500)
+  }, [])
+
+  const dismiss = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
+  const value = useMemo(() => ({ push }), [push])
+
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed bottom-4 right-4 z-[60] grid w-[min(24rem,calc(100vw-2rem))] gap-2">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className={cn(
-              'flex items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3 text-sm shadow-lg',
-              item.kind === 'success' && 'border-success/30',
-              item.kind === 'error' && 'border-danger/30',
-            )}
-          >
-            <span>{item.title}</span>
-            <Button size="icon" variant="ghost" onClick={() => remove(item.id)}>
-              <X className="size-4" />
-            </Button>
+      <div aria-live="polite" className="fixed right-4 bottom-4 z-[60] flex w-80 flex-col gap-2">
+        {toasts.map((t) => (
+          <div key={t.id} className="flex items-start gap-3 border border-line bg-card p-3 shadow-xl">
+            {t.kind === 'success' ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" aria-hidden="true" /> : null}
+            {t.kind === 'error' ? <AlertTriangle className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden="true" /> : null}
+            {t.kind === 'info' ? <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
+            <p className={cn('flex-1 text-sm', t.kind === 'error' && 'text-danger')}>{t.message}</p>
+            <button onClick={() => dismiss(t.id)} aria-label="Dismiss" className="text-muted-foreground hover:text-foreground">
+              <X className="size-3.5" />
+            </button>
           </div>
         ))}
       </div>
@@ -48,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useToast() {
+export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext)
   if (!ctx) throw new Error('useToast must be used within ToastProvider')
   return ctx

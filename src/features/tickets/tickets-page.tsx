@@ -1,83 +1,138 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Plus, Ticket as TicketIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
-import { Card, CardContent } from '../../components/ui/card'
 import { EmptyState } from '../../components/ui/empty-state'
-import { Select } from '../../components/ui/form'
+import { Field, Select } from '../../components/ui/field'
 import { SectionHeader } from '../../components/ui/section-header'
-import { Spinner } from '../../components/ui/spinner'
-import { useToast } from '../../components/ui/toast'
+import { PageLoader } from '../../components/ui/spinner'
+import { useHasRole } from '../../lib/auth'
+import { timeAgo } from '../../lib/format'
 import { PRIORITY_META, TICKET_STATUS_META } from '../../lib/meta'
-import { formatDate } from '../../lib/format'
-import type { Priority, Ticket, TicketStatus } from '../../types/api'
-import { useCreateTicket, useDeleteTicket, useTickets, useUpdateTicket, type TicketFilters } from '../../queries/tickets'
+import { useProjects } from '../../queries/projects'
+import { useTickets, type TicketFilters } from '../../queries/tickets'
+import { Button } from '../../components/ui/button'
+import type { Priority, TicketStatus } from '../../types/api'
 import { TicketFormModal } from './ticket-form-modal'
-
-const statusOptions: TicketStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
-const priorityOptions: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
 
 export function TicketsPage() {
   const [filters, setFilters] = useState<TicketFilters>({})
-  const [creating, setCreating] = useState(false)
-  const [editing, setEditing] = useState<Ticket | null>(null)
-  const tickets = useTickets(filters)
-  const create = useCreateTicket()
-  const deleteTicket = useDeleteTicket()
-  const { toast } = useToast()
+  const [formOpen, setFormOpen] = useState(false)
+  const canWrite = useHasRole('ADMIN', 'DEVELOPER')
+
+  const ticketsQuery = useTickets(filters)
+  const projectsQuery = useProjects()
+
+  const projectName = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const p of projectsQuery.data?.data ?? []) map.set(p.id, p.name)
+    return map
+  }, [projectsQuery.data])
+
+  const projects = projectsQuery.data?.data ?? []
+
+  if (ticketsQuery.isLoading) return <PageLoader />
+
+  const tickets = ticketsQuery.data?.data ?? []
 
   return (
-    <div className="grid gap-6">
-      <SectionHeader title="Tickets" description="Track incidents and deployment follow-ups." action={<Button onClick={() => setCreating(true)}><Plus className="size-4" /> New ticket</Button>} />
-      <Card>
-        <CardContent className="flex flex-col gap-3 sm:flex-row">
-          <div className="flex items-center gap-2 text-muted-foreground"><Search className="size-4" /> Filters</div>
-          <Select value={filters.status ?? ''} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value as TicketStatus || undefined }))}>
-            <option value="">All statuses</option>
-            {statusOptions.map((status) => <option key={status} value={status}>{TICKET_STATUS_META[status].label}</option>)}
+    <div className="flex flex-col gap-8">
+      <SectionHeader
+        index="03 / Tickets"
+        title="Incidents and follow-ups."
+        description="Failed deployments open tickets automatically. Track them here."
+        action={
+          canWrite ? (
+            <Button onClick={() => setFormOpen(true)}>
+              <Plus className="size-4" aria-hidden="true" />
+              New ticket
+            </Button>
+          ) : undefined
+        }
+      />
+
+      <div className="grid gap-3 border border-line bg-card p-4 sm:grid-cols-3">
+        <Field label="Status">
+          <Select
+            value={filters.status ?? ''}
+            onChange={(e) => setFilters((f) => ({ ...f, status: (e.target.value || undefined) as TicketStatus | undefined }))}
+          >
+            <option value="">All</option>
+            {(Object.keys(TICKET_STATUS_META) as TicketStatus[]).map((s) => (
+              <option key={s} value={s}>
+                {TICKET_STATUS_META[s].label}
+              </option>
+            ))}
           </Select>
-          <Select value={filters.priority ?? ''} onChange={(event) => setFilters((current) => ({ ...current, priority: event.target.value as Priority || undefined }))}>
-            <option value="">All priorities</option>
-            {priorityOptions.map((priority) => <option key={priority} value={priority}>{PRIORITY_META[priority].label}</option>)}
+        </Field>
+        <Field label="Priority">
+          <Select
+            value={filters.priority ?? ''}
+            onChange={(e) => setFilters((f) => ({ ...f, priority: (e.target.value || undefined) as Priority | undefined }))}
+          >
+            <option value="">All</option>
+            {(Object.keys(PRIORITY_META) as Priority[]).map((p) => (
+              <option key={p} value={p}>
+                {PRIORITY_META[p].label}
+              </option>
+            ))}
           </Select>
-        </CardContent>
-      </Card>
-      {tickets.isLoading ? <Spinner /> : null}
-      {!tickets.isLoading && (tickets.data?.length ?? 0) === 0 ? <EmptyState title="No tickets found" /> : null}
-      <div className="grid gap-3">
-        {(tickets.data ?? []).map((ticket) => (
-          <Card key={ticket.id}>
-            <CardContent className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-semibold">{ticket.title}</h2>
-                  <Badge variant={TICKET_STATUS_META[ticket.status].variant}>{TICKET_STATUS_META[ticket.status].label}</Badge>
-                  <Badge variant={PRIORITY_META[ticket.priority].variant}>{PRIORITY_META[ticket.priority].label}</Badge>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">{ticket.project.name} · {formatDate(ticket.createdAt)}</p>
-              </div>
-              <div className="flex gap-2">
-                <Link className="inline-flex h-8 items-center gap-1 rounded-md border border-border px-3 text-xs" to={`/tickets/${ticket.id}`}>
-                  <ArrowUpRight className="size-4" /> Open
-                </Link>
-                <Button size="sm" variant="outline" onClick={() => setEditing(ticket)}><Pencil className="size-4" /> Edit</Button>
-                <Button size="sm" variant="danger" onClick={async () => { await deleteTicket.mutateAsync(ticket.id); toast('Ticket deleted', 'success') }}>
-                  <Trash2 className="size-4" /> Delete
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        </Field>
+        <Field label="Project">
+          <Select
+            value={filters.projectId ?? ''}
+            onChange={(e) => setFilters((f) => ({ ...f, projectId: e.target.value || undefined }))}
+          >
+            <option value="">All</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
       </div>
-      <TicketFormModal open={creating} onClose={() => setCreating(false)} loading={create.isPending} onSubmit={async (input) => { await create.mutateAsync(input); toast('Ticket created', 'success') }} />
-      {editing ? <EditTicketModal ticket={editing} onClose={() => setEditing(null)} /> : null}
+
+      {tickets.length === 0 ? (
+        <EmptyState icon={TicketIcon} title="No tickets match" description="Adjust the filters or create a new ticket." />
+      ) : (
+        <div className="overflow-x-auto border border-line bg-card">
+          <table className="w-full min-w-[680px] text-sm">
+            <thead>
+              <tr className="border-b border-line text-left">
+                <th className="px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-muted-foreground">Ticket</th>
+                <th className="px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-muted-foreground">Project</th>
+                <th className="px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-muted-foreground">Priority</th>
+                <th className="px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-muted-foreground">Status</th>
+                <th className="px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-muted-foreground">Assigned</th>
+                <th className="px-4 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-muted-foreground">Created</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {tickets.map((ticket) => (
+                <tr key={ticket.id} className="transition-colors hover:bg-accent-surface/5">
+                  <td className="max-w-[280px] px-4 py-3">
+                    <Link to={`/tickets/${ticket.id}`} className="font-medium underline-offset-4 hover:underline">
+                      {ticket.title}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{projectName.get(ticket.projectId) ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    <Badge variant={PRIORITY_META[ticket.priority].variant}>{PRIORITY_META[ticket.priority].label}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant={TICKET_STATUS_META[ticket.status].variant}>{TICKET_STATUS_META[ticket.status].label}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{ticket.assignedTo ?? '—'}</td>
+                  <td className="px-4 py-3 text-xs whitespace-nowrap text-muted-foreground">{timeAgo(ticket.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <TicketFormModal open={formOpen} onClose={() => setFormOpen(false)} />
     </div>
   )
-}
-
-function EditTicketModal({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
-  const update = useUpdateTicket(ticket.id)
-  const { toast } = useToast()
-  return <TicketFormModal open ticket={ticket} onClose={onClose} loading={update.isPending} onSubmit={async (input) => { await update.mutateAsync(input); toast('Ticket updated', 'success') }} />
 }

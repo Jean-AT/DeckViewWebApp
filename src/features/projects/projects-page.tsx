@@ -1,100 +1,120 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, Pencil, Plus, Trash2 } from 'lucide-react'
-import { Button } from '../../components/ui/button'
-import { Card, CardContent } from '../../components/ui/card'
+import { Badge } from '../../components/ui/badge'
+import { CardBrackets } from '../../components/ui/card'
 import { EmptyState } from '../../components/ui/empty-state'
 import { SectionHeader } from '../../components/ui/section-header'
-import { Spinner } from '../../components/ui/spinner'
-import { useToast } from '../../components/ui/toast'
-import { PROVIDERS } from '../../lib/meta'
+import { PageLoader } from '../../components/ui/spinner'
+import { StatusDot } from '../../components/ui/stat'
 import { useHasRole } from '../../lib/auth'
-import type { Project } from '../../types/api'
-import { useCreateProject, useDeleteProject, useProjects, useUpdateProject } from '../../queries/projects'
+import { timeAgo } from '../../lib/format'
+import { PROVIDERS, STATUS_META } from '../../lib/meta'
+import { useProjects } from '../../queries/projects'
+import { useDashboard } from '../../queries/dashboard'
+import { Button } from '../../components/ui/button'
+import type { Status } from '../../types/api'
 import { ProjectFormModal } from './project-form-modal'
 
 export function ProjectsPage() {
-  const projects = useProjects()
-  const create = useCreateProject()
-  const deleteProject = useDeleteProject()
-  const isAdmin = useHasRole('ADMIN')
-  const [editing, setEditing] = useState<Project | null>(null)
-  const [creating, setCreating] = useState(false)
-  const { toast } = useToast()
+  const projectsQuery = useProjects()
+  const dashboardQuery = useDashboard()
+  const canWrite = useHasRole('ADMIN', 'DEVELOPER')
+  const [formOpen, setFormOpen] = useState(false)
+
+  const lastStatusByProject = useMemo(() => {
+    const map = new Map<string, { status: Status; at: string }>()
+    for (const dep of dashboardQuery.data?.deployments ?? []) {
+      const current = map.get(dep.projectId)
+      if (!current || new Date(dep.startedAt) > new Date(current.at)) {
+        map.set(dep.projectId, { status: dep.status, at: dep.startedAt })
+      }
+    }
+    return map
+  }, [dashboardQuery.data])
+
+  if (projectsQuery.isLoading) return <PageLoader />
+
+  const projects = projectsQuery.data?.data ?? []
 
   return (
-    <div className="grid gap-6">
+    <div className="flex flex-col gap-8">
       <SectionHeader
-        title="Projects"
-        description="Deployment sources and provider configuration."
-        action={isAdmin ? <Button onClick={() => setCreating(true)}><Plus className="size-4" /> New project</Button> : null}
+        index="02 / Projects"
+        title="Every pipeline in one deck."
+        description="Projects connected to Jenkins, Vercel, GitHub Actions, AWS and Firebase."
+        action={
+          canWrite ? (
+            <Button onClick={() => setFormOpen(true)}>
+              <Plus className="size-4" aria-hidden="true" />
+              New project
+            </Button>
+          ) : undefined
+        }
       />
-      {projects.isLoading ? <Spinner /> : null}
-      {!projects.isLoading && (projects.data?.length ?? 0) === 0 ? (
-        <EmptyState title="No projects yet" action={isAdmin ? { label: 'Create project', onClick: () => setCreating(true) } : undefined} />
-      ) : null}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {(projects.data ?? []).map((project) => {
-          const meta = PROVIDERS[project.provider]
-          return (
-            <Card key={project.id}>
-              <CardContent className="grid gap-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <meta.icon className="size-4 text-muted-foreground" />
-                      <h2 className="font-semibold">{project.name}</h2>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">{meta.label}</p>
-                  </div>
-                  <Link className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground" to={`/projects/${project.id}`}>
-                    <ArrowUpRight className="size-4" />
-                  </Link>
-                </div>
-                {project.repoUrl ? <p className="truncate font-mono text-xs text-muted-foreground">{project.repoUrl}</p> : null}
-                {isAdmin ? (
-                  <div className="flex justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setEditing(project)}><Pencil className="size-4" /> Edit</Button>
-                    <Button size="sm" variant="danger" onClick={async () => {
-                      await deleteProject.mutateAsync(project.id)
-                      toast('Project deleted', 'success')
-                    }}>
-                      <Trash2 className="size-4" /> Delete
-                    </Button>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-      <ProjectFormModal
-        open={creating}
-        onClose={() => setCreating(false)}
-        loading={create.isPending}
-        onSubmit={async (input) => {
-          await create.mutateAsync(input)
-          toast('Project created', 'success')
-        }}
-      />
-      {editing ? <EditProjectModal project={editing} onClose={() => setEditing(null)} /> : null}
-    </div>
-  )
-}
 
-function EditProjectModal({ project, onClose }: { project: Project; onClose: () => void }) {
-  const update = useUpdateProject(project.id)
-  const { toast } = useToast()
-  return (
-    <ProjectFormModal
-      open
-      project={project}
-      onClose={onClose}
-      loading={update.isPending}
-      onSubmit={async (input) => {
-        await update.mutateAsync(input)
-        toast('Project updated', 'success')
-      }}
-    />
+      {projects.length === 0 ? (
+        <EmptyState
+          title="No projects yet"
+          description={canWrite ? 'Create your first project to start syncing deployments.' : 'An admin needs to create a project first.'}
+          action={
+            canWrite ? (
+              <Button onClick={() => setFormOpen(true)}>
+                <Plus className="size-4" aria-hidden="true" />
+                New project
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {projects.map((project) => {
+            const provider = PROVIDERS[project.provider]
+            const last = lastStatusByProject.get(project.id)
+            return (
+              <Link
+                key={project.id}
+                to={`/projects/${project.id}`}
+                className="group relative flex flex-col gap-4 border border-line bg-card p-6 transition-colors hover:bg-accent-surface/10"
+              >
+                <CardBrackets />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <provider.icon className="size-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+                      {provider.label}
+                    </span>
+                  </div>
+                  {last ? (
+                    <Badge variant={STATUS_META[last.status].variant}>{STATUS_META[last.status].label}</Badge>
+                  ) : (
+                    <Badge variant="outline">No data</Badge>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg tracking-tight">{project.name}</h3>
+                  <p className="mt-1 truncate text-sm text-muted-foreground">{project.repoUrl ?? 'No repo linked'}</p>
+                </div>
+                <div className="mt-auto flex items-center justify-between border-t border-line pt-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-2">
+                    {last ? (
+                      <>
+                        <StatusDot status={last.status} />
+                        Last deploy {timeAgo(last.at)}
+                      </>
+                    ) : (
+                      'Never synced'
+                    )}
+                  </span>
+                  <span className="font-mono">created {timeAgo(project.createdAt)}</span>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      )}
+
+      <ProjectFormModal open={formOpen} onClose={() => setFormOpen(false)} />
+    </div>
   )
 }

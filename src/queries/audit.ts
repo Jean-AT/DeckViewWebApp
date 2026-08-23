@@ -9,18 +9,15 @@ export interface AuditFilters {
   userId?: string
 }
 
-function toQuery(filters: AuditFilters = {}) {
-  const params = new URLSearchParams()
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) params.set(key, value)
-  })
-  const qs = params.toString()
-  return qs ? `?${qs}` : ''
-}
+export function useAuditLogs(filters: AuditFilters = {}) {
+  const query = new URLSearchParams()
+  if (filters.action) query.set('action', filters.action)
+  if (filters.resourceType) query.set('resourceType', filters.resourceType)
+  if (filters.userId) query.set('userId', filters.userId)
+  query.set('limit', '100')
 
-export function useAuditLogs(filters?: AuditFilters) {
   return useQuery({
-    queryKey: queryKeys.auditLogs(filters),
-    queryFn: () => apiFetch<Paginated<AuditLog>>(`/audit-logs${toQuery(filters)}`).then((r) => r.data),
+    queryKey: queryKeys.audit.list({ ...filters }),
+    queryFn: () => apiFetch<Paginated<AuditLog>>(`/audit-logs?${query.toString()}`),
   })
 }

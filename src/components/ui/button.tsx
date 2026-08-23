@@ -1,45 +1,41 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react'
-import { Loader2 } from 'lucide-react'
 import { cn } from '../../lib/cn'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline'
-export type ButtonSize = 'sm' | 'md' | 'icon'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger'
+type Size = 'sm' | 'md' | 'lg'
 
-const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
-  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-  ghost: 'bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
-  danger: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-  outline: 'border border-border bg-transparent text-foreground hover:bg-secondary',
+const VARIANTS: Record<Variant, string> = {
+  primary: 'bg-primary text-primary-foreground hover:bg-primary/85',
+  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/70',
+  ghost: 'text-muted-foreground hover:bg-accent-surface/10 hover:text-foreground',
+  outline: 'border border-line text-foreground hover:bg-accent-surface/10',
+  danger: 'border border-danger/40 bg-danger/10 text-danger hover:bg-danger/20',
 }
 
-const sizes: Record<ButtonSize, string> = {
-  sm: 'h-8 gap-1.5 px-3 text-xs',
-  md: 'h-10 gap-2 px-4 text-sm',
-  icon: 'size-9 p-0',
+const SIZES: Record<Size, string> = {
+  sm: 'h-8 px-3 text-xs',
+  md: 'h-9 px-4 text-sm',
+  lg: 'h-11 px-6 text-sm',
 }
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: ButtonVariant
-  size?: ButtonSize
-  loading?: boolean
+  variant?: Variant
+  size?: Size
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', loading = false, disabled, children, ...props }, ref) => (
+  ({ className, variant = 'primary', size = 'md', type = 'button', ...props }, ref) => (
     <button
       ref={ref}
+      type={type}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-md font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
-        variants[variant],
-        sizes[size],
+        'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
+        VARIANTS[variant],
+        SIZES[size],
         className,
       )}
-      disabled={disabled || loading}
       {...props}
-    >
-      {loading ? <Loader2 className="size-4 animate-spin" /> : children}
-    </button>
+    />
   ),
 )
 Button.displayName = 'Button'

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../lib/api'
-import type { Paginated, Priority, Ticket, TicketStatus } from '../types/api'
+import type { Paginated, Ticket, TicketStatus, Priority } from '../types/api'
 import { queryKeys } from './keys'
 
 export interface TicketFilters {
@@ -10,56 +10,62 @@ export interface TicketFilters {
   assignedTo?: string
 }
 
-export interface TicketInput {
-  projectId: string
-  deploymentId?: string | null
-  title: string
-  description?: string | null
-  priority: Priority
-  status?: TicketStatus
-  assignedTo?: string | null
-}
+export function useTickets(filters: TicketFilters = {}) {
+  const query = new URLSearchParams()
+  if (filters.status) query.set('status', filters.status)
+  if (filters.priority) query.set('priority', filters.priority)
+  if (filters.projectId) query.set('projectId', filters.projectId)
+  if (filters.assignedTo) query.set('assignedTo', filters.assignedTo)
+  query.set('limit', '100')
+  const qs = query.toString()
 
-function toQuery(filters: TicketFilters = {}) {
-  const params = new URLSearchParams()
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) params.set(key, value)
-  })
-  const qs = params.toString()
-  return qs ? `?${qs}` : ''
-}
-
-export function useTickets(filters?: TicketFilters) {
   return useQuery({
-    queryKey: queryKeys.tickets(filters),
-    queryFn: () => apiFetch<Paginated<Ticket>>(`/tickets${toQuery(filters)}`).then((r) => r.data),
+    queryKey: queryKeys.tickets.list({ ...filters }),
+    queryFn: () => apiFetch<Paginated<Ticket>>(`/tickets?${qs}`),
   })
 }
 
 export function useTicket(id: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.ticket(id ?? ''),
-    enabled: Boolean(id),
+    queryKey: queryKeys.tickets.detail(id ?? ''),
     queryFn: () => apiFetch<Ticket>(`/tickets/${id}`),
+    enabled: Boolean(id),
   })
+}
+
+export interface TicketInput {
+  projectId: string
+  deploymentId?: string
+  title: string
+  description?: string
+  priority?: Priority
+  assignedTo?: string
 }
 
 export function useCreateTicket() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: TicketInput) => apiFetch<Ticket>('/tickets', { method: 'POST', body: JSON.stringify(input) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tickets'] }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.tickets.all }),
   })
 }
 
-export function useUpdateTicket(id: string) {
+export interface TicketUpdate {
+  title?: string
+  description?: string
+  priority?: Priority
+  status?: TicketStatus
+  assignedTo?: string | null
+}
+
+export function useUpdateTicket() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: Partial<TicketInput>) =>
+    mutationFn: ({ id, ...input }: TicketUpdate & { id: string }) =>
       apiFetch<Ticket>(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tickets'] })
-      qc.invalidateQueries({ queryKey: queryKeys.ticket(id) })
+    onSuccess: (_data, vars) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.tickets.all })
+      void qc.invalidateQueries({ queryKey: queryKeys.tickets.detail(vars.id) })
     },
   })
 }
@@ -68,6 +74,6 @@ export function useDeleteTicket() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiFetch<void>(`/tickets/${id}`, { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tickets'] }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.tickets.all }),
   })
 }

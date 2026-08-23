@@ -1,6 +1,6 @@
-import type { ComponentType } from 'react'
-import { PackageOpen, type LucideProps } from 'lucide-react'
-import { Button } from './button'
+import type { LucideIcon } from 'lucide-react'
+import { PackageOpen } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 export function EmptyState({
   icon: Icon = PackageOpen,
@@ -8,21 +8,17 @@ export function EmptyState({
   description,
   action,
 }: {
-  icon?: ComponentType<LucideProps>
+  icon?: LucideIcon
   title: string
   description?: string
-  action?: { label: string; onClick: () => void }
+  action?: ReactNode
 }) {
   return (
-    <div className="grid place-items-center rounded-lg border border-dashed border-border px-6 py-12 text-center">
-      <div className="grid max-w-sm gap-3 justify-items-center">
-        <Icon className="size-8 text-muted-foreground" />
-        <div>
-          <h3 className="font-semibold">{title}</h3>
-          {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
-        </div>
-        {action ? <Button onClick={action.onClick}>{action.label}</Button> : null}
-      </div>
+    <div className="flex flex-col items-center justify-center gap-3 border border-dashed border-line p-10 text-center">
+      <Icon className="size-6 text-muted-foreground" aria-hidden="true" />
+      <p className="text-sm font-medium">{title}</p>
+      {description ? <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p> : null}
+      {action}
     </div>
   )
 }

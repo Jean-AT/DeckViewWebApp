@@ -1,12 +1,20 @@
 export const queryKeys = {
-  projects: ['projects'] as const,
-  project: (id: string) => ['projects', id] as const,
-  projectDeployments: (id: string) => ['projects', id, 'deployments'] as const,
-  credentials: (projectId: string) => ['projects', projectId, 'credentials'] as const,
-  deployments: ['deployments'] as const,
-  tickets: (filters?: object) => ['tickets', filters ?? {}] as const,
-  ticket: (id: string) => ['tickets', id] as const,
-  users: ['users'] as const,
-  user: (id: string) => ['users', id] as const,
-  auditLogs: (filters?: object) => ['audit-logs', filters ?? {}] as const,
+  projects: {
+    all: ['projects'] as const,
+    detail: (id: string) => ['projects', id] as const,
+    deployments: (id: string) => ['projects', id, 'deployments'] as const,
+    credentials: (id: string) => ['projects', id, 'credentials'] as const,
+  },
+  tickets: {
+    all: ['tickets'] as const,
+    list: (filters: Record<string, string | undefined>) => ['tickets', 'list', filters] as const,
+    detail: (id: string) => ['tickets', id] as const,
+  },
+  users: {
+    all: ['users'] as const,
+  },
+  audit: {
+    list: (filters: Record<string, string | undefined>) => ['audit-logs', filters] as const,
+  },
+  dashboard: ['dashboard'] as const,
 }

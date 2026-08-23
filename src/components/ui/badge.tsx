@@ -1,27 +1,36 @@
-import type { HTMLAttributes } from 'react'
+import type { ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 
-export type BadgeVariant = 'default' | 'secondary' | 'outline' | 'accent' | 'success' | 'danger' | 'warning'
+export type BadgeVariant = 'default' | 'secondary' | 'success' | 'danger' | 'warning' | 'accent' | 'outline'
 
-const variants: Record<BadgeVariant, string> = {
+const VARIANTS: Record<BadgeVariant, string> = {
   default: 'border-transparent bg-primary text-primary-foreground',
   secondary: 'border-transparent bg-secondary text-secondary-foreground',
-  outline: 'border-border bg-transparent text-muted-foreground',
-  accent: 'border-transparent bg-accent text-accent-foreground',
-  success: 'border-success/25 bg-success/12 text-success',
-  danger: 'border-danger/25 bg-danger/12 text-danger',
-  warning: 'border-warning/25 bg-warning/12 text-warning',
+  success: 'border-success/30 bg-success/10 text-success',
+  danger: 'border-danger/30 bg-danger/10 text-danger',
+  warning: 'border-warning/30 bg-warning/10 text-warning',
+  accent: 'border-accent-surface/30 bg-accent-surface/10 text-accent-surface light:text-accent-surface',
+  outline: 'border-line text-muted-foreground',
 }
 
-export function Badge({ className, variant = 'default', ...props }: HTMLAttributes<HTMLSpanElement> & { variant?: BadgeVariant }) {
+export function Badge({
+  variant = 'default',
+  className,
+  children,
+}: {
+  variant?: BadgeVariant
+  className?: string
+  children: ReactNode
+}) {
   return (
     <span
       className={cn(
-        'inline-flex h-6 items-center rounded-md border px-2 text-xs font-medium leading-none',
-        variants[variant],
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap',
+        VARIANTS[variant],
         className,
       )}
-      {...props}
-    />
+    >
+      {children}
+    </span>
   )
 }

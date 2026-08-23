@@ -1,33 +1,29 @@
 import { LogOut } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { ROLE_META } from '../../lib/meta'
 import { useAuth } from '../../lib/auth'
+import { ROLE_META } from '../../lib/meta'
 import { Badge } from '../ui/badge'
-import { Button } from '../ui/button'
 
 export function UserMenu() {
   const { user, logout } = useAuth()
-  const navigate = useNavigate()
   if (!user) return null
+
+  const role = ROLE_META[user.role]
 
   return (
     <div className="flex items-center gap-3">
-      <div className="hidden text-right sm:block">
-        <p className="text-sm font-medium leading-none">{user.name}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{user.email}</p>
+      <div className="hidden flex-col items-end sm:flex">
+        <span className="text-sm leading-tight font-medium">{user.name}</span>
+        <span className="text-xs text-muted-foreground">{user.email}</span>
       </div>
-      <Badge variant={ROLE_META[user.role].variant}>{ROLE_META[user.role].label}</Badge>
-      <Button
-        aria-label="Log out"
-        size="icon"
-        variant="ghost"
-        onClick={() => {
-          logout()
-          navigate('/login')
-        }}
+      <Badge variant={role.variant}>{role.label}</Badge>
+      <button
+        onClick={logout}
+        aria-label="Sign out"
+        title="Sign out"
+        className="inline-flex size-9 items-center justify-center rounded-lg border border-line text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
       >
         <LogOut className="size-4" />
-      </Button>
+      </button>
     </div>
   )
 }
