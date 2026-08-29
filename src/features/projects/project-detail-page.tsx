@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, ArrowUpRight, Pencil, Play, RefreshCw, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Pencil, RefreshCw, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Badge } from '../../components/ui/badge'
 import { Eyebrow } from '../../components/ui/card'
@@ -10,7 +10,7 @@ import { ApiErrorResponse } from '../../lib/api'
 import { useHasRole } from '../../lib/auth'
 import { formatDate, timeAgo } from '../../lib/format'
 import { PROVIDERS } from '../../lib/meta'
-import { useDeployments, useDeleteProject, useProject, useSyncProject, useTriggerDeploy } from '../../queries/projects'
+import { useDeployments, useDeleteProject, useProject, useSyncProject } from '../../queries/projects'
 import { useTickets } from '../../queries/tickets'
 import { TICKET_STATUS_META, PRIORITY_META } from '../../lib/meta'
 import { ProjectFormModal } from './project-form-modal'
@@ -28,7 +28,6 @@ export function ProjectDetailPage() {
   const deploymentsQuery = useDeployments(id)
   const ticketsQuery = useTickets({ projectId: id })
   const syncProject = useSyncProject()
-  const triggerDeploy = useTriggerDeploy()
   const deleteProject = useDeleteProject()
 
   const [editOpen, setEditOpen] = useState(false)
@@ -50,18 +49,6 @@ export function ProjectDetailPage() {
       else toast.push('error', result.error ?? `Sync finished with status ${result.status}`)
     } catch (err) {
       toast.push('error', err instanceof ApiErrorResponse ? err.message : 'Sync failed')
-    }
-  }
-
-  const handleTrigger = async () => {
-    if (!window.confirm('Trigger a new deploy on the provider?')) return
-    try {
-      const result = await triggerDeploy.mutateAsync(project.id)
-      if (result.status === 'ok') toast.push('success', 'Deploy triggered')
-      else if (result.status === 'unsupported') toast.push('info', result.error ?? 'Provider does not support triggers')
-      else toast.push('error', result.error ?? `Trigger finished with status ${result.status}`)
-    } catch (err) {
-      toast.push('error', err instanceof ApiErrorResponse ? err.message : 'Trigger failed')
     }
   }
 
@@ -120,16 +107,6 @@ export function ProjectDetailPage() {
               >
                 {syncProject.isPending ? <Spinner /> : <RefreshCw className="size-4" aria-hidden="true" />}
                 Sync now
-              </button>
-            ) : null}
-            {canWrite ? (
-              <button
-                onClick={handleTrigger}
-                disabled={triggerDeploy.isPending}
-                className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/85 disabled:opacity-50"
-              >
-                {triggerDeploy.isPending ? <Spinner className="text-primary-foreground" /> : <Play className="size-4" aria-hidden="true" />}
-                Trigger deploy
               </button>
             ) : null}
             {canWrite ? (

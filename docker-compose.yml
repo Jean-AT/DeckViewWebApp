@@ -1,0 +1,11 @@
+services:
+  web:
+    build: .
+    image: deckview-webapp:local
+    ports:
+      - "${PORT:-8080}:80"
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal:3000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
