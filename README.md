@@ -6,8 +6,6 @@
 
 Frontend del dashboard DevOps interno **DeckView**. Centraliza proyectos, deploys y tickets de Jenkins, Vercel, GitHub Actions, AWS y Firebase.
 
-Diseño dark-first inspirado en [crafter.run](https://crafter.run/en) (Space Grotesk + JetBrains Mono).
-
 El backend vive en [Jean-AT/DeckView](https://github.com/Jean-AT/DeckView) y tiene que estar corriendo para que la API responda.
 
 ![Dashboard](docs/screenshots/dashboard.png)
