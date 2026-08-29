@@ -1,5 +1,9 @@
 # DeckViewWebApp
 
+<p align="center">
+  <img src="public/favicon.svg" alt="DeckView logo" width="96" />
+</p>
+
 Frontend del dashboard DevOps interno **DeckView**. Centraliza proyectos, deploys y tickets de Jenkins, Vercel, GitHub Actions, AWS y Firebase.
 
 Diseño dark-first inspirado en [crafter.run](https://crafter.run/en) (Space Grotesk + JetBrains Mono).
