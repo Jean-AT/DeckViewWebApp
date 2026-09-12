@@ -3,6 +3,11 @@ import { apiFetch } from './api'
 import { clearTokens, getRefreshToken, setTokens } from './tokens'
 import type { AuthResponse, AuthUser, Role } from '../types/api'
 
+interface RefreshResponse {
+  accessToken: string
+  refreshToken: string
+}
+
 interface AuthContextValue {
   user: AuthUser | null
   initializing: boolean
@@ -27,12 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
       try {
-        const data = await apiFetch<AuthResponse>('/auth/refresh', {
+        const data = await apiFetch<RefreshResponse>('/auth/refresh', {
           method: 'POST',
           body: JSON.stringify({ refreshToken }),
         })
         setTokens(data.accessToken, data.refreshToken)
-        if (active) setUser(data.user)
+        const me = await apiFetch<{ user: AuthUser }>('/auth/me')
+        if (active) setUser(me.user)
       } catch {
         clearTokens()
       } finally {
